@@ -73,7 +73,7 @@ transition:color .3s;
 .cal-wrap{
 position:relative;
 width:min(96vw,420px);height:min(96vw,420px);
-flex-shrink:0;border-radius:50%;overflow:hidden;
+flex-shrink:0;border-radius:50%;overflow:visible;
 background:var(–dial-bg);
 box-shadow:var(–dial-shadow);
 transition:background .3s,box-shadow .3s;
@@ -82,6 +82,16 @@ canvas#dial{
 position:absolute;top:0;left:0;
 width:100%;height:100%;
 touch-action:none;
+}
+.pointer{
+position:absolute;
+top:0; left:50%;
+transform:translateX(-50%);
+width:0; height:0;
+border-left:  5px solid transparent;
+border-right: 5px solid transparent;
+border-top:   10px solid #e8001d;
+z-index:10;
 }
 .center{
 position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -136,6 +146,7 @@ transition:color .2s,border-color .2s,background .3s;
 <div class="app">
   <div class="dial-wrapper">
   <div class="cal-wrap" id="calWrap">
+    <div class="pointer"></div>
     <canvas id="dial"></canvas>
     <div class="center" id="center">
       <div class="c-label" id="cLabel"></div>
@@ -188,9 +199,9 @@ const DSHORT=['SUN','MON','TUE','WED','THU','FRI','SAT'];
 // ─── Ring radii (fraction of canvas half-size) ────────────────────────────────
 const F = {
   yr2:0.970, yr1:0.845,   // year  — width 0.125 (6 segments)
-  mo2:0.825, mo1:0.630,   // month — width 0.195 (12 segments)  gap=0.020
-  dy2:0.610, dy1:0.370,   // day   — width 0.240 (31 segments)  gap=0.020
-  wd2:0.350, wd1:0.210,   // wday  — width 0.140 (7 segments)   gap=0.020
+  mo2:0.825, mo1:0.630,   // month — width 0.195 (12 segments)
+  dy2:0.610, dy1:0.370,   // day   — width 0.240 (31 segments)
+  wd2:0.350, wd1:0.210,   // wday  — width 0.140 (7 segments)
 };
 const R = f => (SZ/2)*f;
 
@@ -336,7 +347,7 @@ function draw(){
   drawDayRing(cx,cy);
   drawWeekdayRing(cx,cy);
   drawDividers(cx,cy);
-  drawPointer(cx,cy);
+  // pointer is HTML element
   updateCenter();
   updateTrail();
 }
@@ -494,19 +505,11 @@ function drawDividers(cx,cy){
   // One line between each ring pair — no double lines
   [F.yr1, F.mo1, F.dy1, F.wd1].forEach(f=>{
     ctx.beginPath(); ctx.arc(cx,cy,R(f),0,Math.PI*2);
-    ctx.strokeStyle=T().divider; ctx.lineWidth=R(0.004); ctx.stroke();
+    ctx.strokeStyle=T().divider; ctx.lineWidth=1; ctx.stroke();
   });
 }
 
-function drawPointer(cx,cy){
-  // Red triangle just above year ring outer edge, at top (0°)
-  const base=cy-R(F.yr2)+R(0.003);
-  const tip =base-R(0.05);
-  const hw  =R(0.018);
-  ctx.beginPath();
-  ctx.moveTo(cx,tip); ctx.lineTo(cx-hw,base); ctx.lineTo(cx+hw,base);
-  ctx.closePath(); ctx.fillStyle=T().pointer; ctx.fill();
-}
+  // pointer drawn as HTML element, not on canvas
 
 // ─── Center panel ─────────────────────────────────────────────────────────────
 const NYSE_NAMES = {
