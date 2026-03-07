@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Orbital"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Orbital</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Theme tokens ── */
+:root{
+–bg:       #f4f4f4;
+–dial-bg:  #ffffff;
+–dial-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 2px 12px rgba(0,0,0,.07);
+–center-bg:#ffffff;
+–center-border: rgba(0,0,0,.08);
+–ui-bg:    #ffffff;
+–ui-border:rgba(0,0,0,.12);
+–ui-text:  rgba(0,0,0,.38);
+–trail-border: rgba(0,0,0,.13);
+–trail-text:   rgba(0,0,0,.2);
+–trail-on:     #111;
+–trail-on-border: rgba(0,0,0,.32);
+–wordmark: rgba(0,0,0,.28);
+–hint:     rgba(0,0,0,.22);
+–arrow:    rgba(0,0,0,.18);
+–label:    rgba(0,0,0,.35);
+–num:      #111;
+–red:      #e8001d;
+–toggle-icon: ‘☀️’;
+}
+
+html,body{
+width:100%;height:100%;background:var(–bg);color-scheme:light;
+font-family:‘Barlow Condensed’,sans-serif;
+display:flex;align-items:flex-start;justify-content:center;
+min-height:100vh;overflow:hidden;touch-action:none;
+transition:background .3s;
+}
+.app{
+display:flex;flex-direction:column;align-items:center;
+gap:20px;padding:12px 10px;width:100%;max-width:440px;
+height:100vh;
+}
+.dial-wrapper{
+flex:1;
+display:flex;align-items:center;justify-content:center;
+}
+.wordmark{
+font-weight:500;font-size:10px;letter-spacing:.46em;
+text-transform:uppercase;color:var(–wordmark);align-self:flex-start;
+transition:color .3s;
+}
+/* ── Solari / split-flap display board ── */
+.board{
+display:flex;gap:2px;align-items:stretch;
+background:#111;border-radius:4px;
+padding:4px;
+box-shadow:0 2px 12px rgba(0,0,0,.4);
+width:100%;
+}
+.flap{
+display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+font-family:‘Share Tech Mono’,monospace;
+background:#1a1a1a;
+color:#f0e6c8;
+border-radius:2px;
+flex:1;padding:8px 4px 7px;
+position:relative;overflow:hidden;
+}
+/* Horizontal crease — the split-flap fold line */
+.flap::after{
+content:’’;position:absolute;left:0;right:0;
+top:50%;height:1px;background:rgba(0,0,0,.55);
+}
+.flap-label{
+font-size:8px;letter-spacing:.22em;color:rgba(240,230,200,.35);
+text-transform:uppercase;margin-bottom:4px;line-height:1;
+}
+.flap-val{
+font-size:26px;line-height:1;letter-spacing:.04em;
+color:#f0e6c8;
+}
+.flap-sep{
+width:2px;background:#111;align-self:stretch;flex-shrink:0;
+}
+.cal-wrap{
+position:relative;
+width:min(96vw,420px);height:min(96vw,420px);
+flex-shrink:0;border-radius:50%;overflow:hidden;
+background:var(–dial-bg);
+box-shadow:var(–dial-shadow);
+transition:background .3s,box-shadow .3s;
+}
+canvas#dial{
+position:absolute;top:0;left:0;
+width:100%;height:100%;
+touch-action:none;
+}
+.center{
+position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+width:22%;height:22%;border-radius:50%;
+background:var(–center-bg);
+border:1px solid var(–center-border);
+box-shadow:0 0 0 4px var(–center-bg);
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+z-index:20;pointer-events:auto;cursor:pointer;
+transition:background .3s,border-color .3s,box-shadow .3s;
+}
+.center:active{opacity:0.7;transition:opacity .1s;}
+.c-label{
+font-size:clamp(7px,1.8vw,9px);letter-spacing:.2em;color:var(–label);
+text-transform:uppercase;opacity:0;transform:translateY(2px);
+transition:opacity .25s,transform .25s,color .3s;
+}
+.c-num{
+font-family:‘Barlow’,sans-serif;font-weight:500;
+font-size:clamp(22px,7vw,36px);line-height:1;
+letter-spacing:-.02em;color:var(–num);opacity:0;transform:scale(.88);
+transition:opacity .25s .04s,transform .25s .04s,color .25s;
+}
+.c-sub{
+font-size:clamp(6px,1.6vw,8px);letter-spacing:.16em;color:var(–label);
+text-transform:uppercase;opacity:0;transform:translateY(-2px);
+transition:opacity .25s .08s,transform .25s .08s,color .3s;
+}
+.c-dot{
+width:4px;height:4px;border-radius:50%;background:var(–red);
+margin-top:2px;opacity:0;transition:opacity .25s,background .3s;
+}
+.center.show .c-label,.center.show .c-num,.center.show .c-sub{opacity:1;transform:none}
+.center.today-mode .c-num{color:var(–red)}
+.center.today-mode .c-dot{opacity:1}
+.center.holiday-mode .c-sub{color:var(–red);letter-spacing:.08em}
+.controls{display:flex;align-items:center;justify-content:space-between;width:100%}
+.btn-today{
+font-family:‘Barlow Condensed’,sans-serif;font-weight:500;font-size:9px;
+letter-spacing:.24em;text-transform:uppercase;color:var(–ui-text);
+background:var(–ui-bg);border:1px solid var(–ui-border);padding:7px 14px;
+cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:7px;
+transition:color .2s,border-color .2s,background .3s;
+}
+.btn-today:hover{color:var(–red);border-color:var(–red)}
+.btn-dot{width:6px;height:6px;border-radius:50%;background:var(–red);transition:background .3s}
+.hint{font-size:8px;letter-spacing:.1em;color:var(–hint);transition:color .3s}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="dial-wrapper">
+  <div class="cal-wrap" id="calWrap">
+    <canvas id="dial"></canvas>
+    <div class="center" id="center">
+      <div class="c-label" id="cLabel"></div>
+      <div class="c-num"   id="cNum"></div>
+      <div class="c-sub"   id="cSub"></div>
+
+```
+</div>
+```
+
+  </div>
+  </div>
+  <div class="controls">
+    <span class="hint">Built by Dilip</span>
+  </div>
+</div>
+
+<script>
+const WRAP   = document.getElementById('calWrap');
+const canvas = document.getElementById('dial');
+const ctx    = canvas.getContext('2d');
+let   SZ     = 400; // canvas pixel size, updated on resize
+const DPR    = ()=>window.devicePixelRatio||1;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const TODAY     = new Date();
+const BASE_YEAR = TODAY.getFullYear();
+const YR_DEG    = 60; // degrees per year — 6 years fill the ring (360/6)
+
+// ─── Theme tokens for canvas drawing ─────────────────────────────────────────
+// Mirrors the CSS variables so the canvas stays in sync with the UI theme.
+const THEMES = {
+  light: {
+    dialBg:      '#ffffff',
+    centerBg:    '#ffffff',
+    bezelMajor:  '#1a1a1a',
+    bezelMinor:  '#c0c0c0',
+    divider:     'rgba(0,0,0,0.14)',
+    selText:     '#000000',
+    dimText:     'rgba(0,0,0,0.50)',
+    ghostText:   'rgba(0,0,0,0.12)',
+    pointer:     '#e8001d',
+    holDot:      'rgba(220,50,47,0.55)',
+    holDotSel:   '#c0392b',
+  }
+};
+const T = () => THEMES.light;
+
+const MSHORT=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DFULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DSHORT=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+// ─── Ring radii (fraction of canvas half-size) ────────────────────────────────
+const F = {
+  yr2:0.970, yr1:0.845,   // year  — width 0.125 (6 segments)
+  mo2:0.825, mo1:0.630,   // month — width 0.195 (12 segments)  gap=0.020
+  dy2:0.610, dy1:0.370,   // day   — width 0.240 (31 segments)  gap=0.020
+  wd2:0.350, wd1:0.210,   // wday  — width 0.140 (7 segments)   gap=0.020
+};
+const R = f => (SZ/2)*f;
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let yearOff = 0;
+const MO = {off:0, vel:0, raf:null, n:12};
+const DY = {off:0, vel:0, raf:null, n:31};
+const WD = {off:0, vel:0, raf:null, n:7};   // weekday — now draggable
+
+// ─── Derived values ───────────────────────────────────────────────────────────
+const getYear  = ()  => BASE_YEAR + Math.round(yearOff / YR_DEG);
+const yrToOff  = y   => (y - BASE_YEAR) * YR_DEG;
+
+function ringIdx(st){
+  const seg=360/st.n, off=((st.off%360)+360)%360;
+  return (Math.round((360-off)/seg)%st.n+st.n)%st.n;
+}
+
+function getVals(){
+  return {yr:getYear(), mo:ringIdx(MO), day:ringIdx(DY)+1, wd:ringIdx(WD)};
+}
+
+const daysInMonth = (y,m) => new Date(y,m+1,0).getDate();
+
+function resolveDate(yr,mo,day){
+  const d=new Date(yr,mo,day); return d.getMonth()===mo?d:null;
+}
+
+// ─── NYSE Holiday Engine ──────────────────────────────────────────────────────
+// Returns a Set of "YYYY-MM-DD" strings for all NYSE holidays in a given year.
+// Rules (NYSE official):
+//   1. New Year's Day          — Jan 1 (Mon if Sun, observed Fri if Sat)
+//   2. Martin Luther King Jr.  — 3rd Monday of January
+//   3. Presidents' Day         — 3rd Monday of February
+//   4. Good Friday             — Friday before Easter Sunday
+//   5. Memorial Day            — Last Monday of May
+//   6. Juneteenth             — Jun 19 (observed Mon if Sun, Fri if Sat) [since 2022]
+//   7. Independence Day        — Jul 4 (observed Mon if Sun, Fri if Sat)
+//   8. Labor Day               — 1st Monday of September
+//   9. Thanksgiving            — 4th Thursday of November
+//  10. Christmas               — Dec 25 (observed Mon if Sun, Fri if Sat)
+
+const _nyseCache = {};
+
+function nyseHolidays(yr){
+  if(_nyseCache[yr]) return _nyseCache[yr];
+  const set = new Set();
+  const key = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+  // Observed date for fixed holidays (Mon if Sun, Fri if Sat)
+  function observed(y, mo, da){
+    const d = new Date(y, mo, da);
+    const wd = d.getDay();
+    if(wd===0) return new Date(y, mo, da+1); // Sunday → Monday
+    if(wd===6) return new Date(y, mo, da-1); // Saturday → Friday
+    return d;
+  }
+
+  // Nth weekday of a month (1=Mon..7=Sun, n=1,2,3,4,-1=last)
+  function nthWeekday(y, mo, wd, n){
+    if(n>0){
+      const first = new Date(y, mo, 1);
+      const diff  = (wd - first.getDay() + 7) % 7;
+      return new Date(y, mo, 1 + diff + (n-1)*7);
+    } else { // last
+      const last = new Date(y, mo+1, 0);
+      const diff = (last.getDay() - wd + 7) % 7;
+      return new Date(y, mo+1, 0 - diff);
+    }
+  }
+
+  // Easter (Anonymous Gregorian algorithm)
+  function easter(y){
+    const a=y%19, b=Math.floor(y/100), c=y%100;
+    const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+    const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+    const i=Math.floor(c/4), k=c%4;
+    const l=(32+2*e+2*i-h-k)%7;
+    const m=Math.floor((a+11*h+22*l)/451);
+    const mo=Math.floor((h+l-7*m+114)/31)-1;
+    const da=((h+l-7*m+114)%31)+1;
+    return new Date(y, mo, da);
+  }
+
+  // 1. New Year's Day
+  set.add(key(observed(yr, 0, 1)));
+
+  // 2. MLK — 3rd Monday of January
+  set.add(key(nthWeekday(yr, 0, 1, 3)));
+
+  // 3. Presidents' Day — 3rd Monday of February
+  set.add(key(nthWeekday(yr, 1, 1, 3)));
+
+  // 4. Good Friday — 2 days before Easter
+  const eas = easter(yr);
+  const gf  = new Date(eas.getFullYear(), eas.getMonth(), eas.getDate()-2);
+  set.add(key(gf));
+
+  // 5. Memorial Day — last Monday of May
+  set.add(key(nthWeekday(yr, 4, 1, -1)));
+
+  // 6. Juneteenth — Jun 19 (observed), NYSE added 2022
+  if(yr >= 2022) set.add(key(observed(yr, 5, 19)));
+
+  // 7. Independence Day — Jul 4 (observed)
+  set.add(key(observed(yr, 6, 4)));
+
+  // 8. Labor Day — 1st Monday of September
+  set.add(key(nthWeekday(yr, 8, 1, 1)));
+
+  // 9. Thanksgiving — 4th Thursday of November
+  set.add(key(nthWeekday(yr, 10, 4, 4)));
+
+  // 10. Christmas — Dec 25 (observed)
+  set.add(key(observed(yr, 11, 25)));
+
+  _nyseCache[yr] = set;
+  return set;
+}
+
+function isNYSEHoliday(yr, mo, da){
+  if(!yr||mo==null||!da) return false;
+  const d = new Date(yr, mo, da);
+  if(d.getMonth()!==mo) return false; // overflow day
+  const wd = d.getDay();
+  if(wd===0||wd===6) return false; // weekend already closed
+  const k = yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(da).padStart(2,'0');
+  return nyseHolidays(yr).has(k);
+}
+
+// ─── Canvas drawing ───────────────────────────────────────────────────────────
+function draw(){
+  const cx=SZ/2, cy=SZ/2;
+  ctx.clearRect(0,0,SZ,SZ);
+
+  // Background circle
+  ctx.beginPath(); ctx.arc(cx,cy,R(0.999),0,Math.PI*2);
+  ctx.fillStyle=T().dialBg; ctx.fill();
+
+  drawBezel(cx,cy);
+  drawYearRing(cx,cy);
+  drawMonthRing(cx,cy);
+  drawDayRing(cx,cy);
+  drawWeekdayRing(cx,cy);
+  drawDividers(cx,cy);
+  drawPointer(cx,cy);
+  updateCenter();
+  updateTrail();
+}
+
+// Bezel tick marks — removed, visual noise on a date dial
+function drawBezel(cx,cy){}
+
+// Draw a donut arc segment (fill + optional stroke)
+function donutSeg(cx,cy, aDeg,bDeg, fi,fo, fill, strokeCol, strokeW){
+  const GAP=0.013; // radian gap between segments
+  const a0=(aDeg-90)*Math.PI/180+GAP;
+  const a1=(bDeg-90)*Math.PI/180-GAP;
+  if(a1<=a0) return;
+  ctx.beginPath();
+  ctx.arc(cx,cy,R(fo),a0,a1);
+  ctx.arc(cx,cy,R(fi),a1,a0,true);
+  ctx.closePath();
+  if(fill && fill!=='transparent'){ ctx.fillStyle=fill; ctx.fill(); }
+  if(strokeCol){
+    ctx.strokeStyle=strokeCol;
+    ctx.lineWidth=strokeW||R(0.003);
+    ctx.stroke();
+  }
+}
+
+// Draw text at midAngleDeg between fi and fo radii.
+// radial='spoke': points toward center like clock indices — always upright
+// radial=true   : tangential to arc — always upright
+// radial=false  : always flat/horizontal
+function arcLabel(cx,cy, midDeg, fi,fo, text, fill, fs, fw, radial){
+  const rm=(R(fi)+R(fo))/2;
+  const a=(midDeg-90)*Math.PI/180;
+  const tx=cx+rm*Math.cos(a), ty=cy+rm*Math.sin(a);
+  ctx.save();
+  ctx.translate(tx,ty);
+  const norm = ((midDeg % 360) + 360) % 360;
+  const inBottom = norm > 90 && norm < 270;
+  if(radial === 'spoke' || radial === true){
+    // Spoke/tangential: rotate so text always reads from outer edge inward.
+    // midDeg=0 (top): rot=0 → text reads downward toward center ✓
+    // midDeg=90 (right): rot=90° → text reads leftward toward center ✓  
+    // midDeg=180 (bottom): rot=180° → text reads upward toward center ✓
+    // midDeg=270 (left): rot=270° → text reads rightward toward center ✓
+    // No bottom-half flip needed — midDeg * PI/180 is correct throughout.
+    ctx.rotate(midDeg * Math.PI/180);
+  }
+  // radial=false: no rotation — flat horizontal
+  ctx.fillStyle=fill;
+  ctx.font=`${fw} ${fs}px "Barlow Condensed",sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,0,0);
+  ctx.restore();
+}
+
+// ── YEAR RING — truly infinite ─────────────────────────────────────────────────
+// We never rotate a group. Instead, for each of the 13 visible slots, we compute
+// the exact screen angle directly from yearOff. The math:
+//   yearOff = (selectedYear - BASE_YEAR) * YR_DEG  at a snapped state
+//   For year Y, its center appears at screen angle:
+//     screenAngle = (Y - BASE_YEAR)*YR_DEG - yearOff
+//                 = (Y - getYear())*YR_DEG - fracAngle
+//   where fracAngle = yearOff - Math.round(yearOff/YR_DEG)*YR_DEG
+// So: drag right (increase yearOff) → years slide left → later years come into view ✓
+function drawYearRing(cx,cy){
+  const {mo,day}=getVals();
+  const nowY=TODAY.getFullYear(), nowM=TODAY.getMonth(), nowD=TODAY.getDate();
+
+  const centerY   = getYear();
+  // How far (in degrees) past the last integer snap are we?
+  const fracAngle = yearOff - (centerY - BASE_YEAR)*YR_DEG;
+
+  for(let delta=-3; delta<=2; delta++){
+    const y          = centerY + delta;
+    const screenMid  = delta*YR_DEG - fracAngle;   // degrees from top (0=pointer)
+    const sDeg       = screenMid - YR_DEG/2;
+    const eDeg       = screenMid + YR_DEG/2;
+    const isSel      = delta===0;
+    const isTod      = isSel && y===nowY && mo===nowM && day===nowD;
+
+    const txtFill  = isSel ? T().selText : T().dimText;
+    const txtWt    = isSel ? '700' : '600';
+    const fs       = isSel ? Math.max(18,R(0.082)) : Math.max(13,R(0.082));
+    donutSeg(cx,cy, sDeg,eDeg, F.yr1,F.yr2, 'transparent', null);
+    arcLabel(cx,cy, screenMid, F.yr1,F.yr2, String(y), txtFill, fs, txtWt, 'spoke');
+  }
+}
+
+// ── MONTH RING ────────────────────────────────────────────────────────────────
+function drawMonthRing(cx,cy){
+  const {yr,day}=getVals();
+  const si=ringIdx(MO), seg=360/12;
+  for(let i=0;i<12;i++){
+    // Screen angle = base position + ring rotation offset
+    const mid  = i*seg + MO.off;
+    const sDeg = mid - seg/2, eDeg = mid + seg/2;
+    const isSel=i===si;
+    const isTod=isSel&&yr===TODAY.getFullYear()&&i===TODAY.getMonth()&&day===TODAY.getDate();
+    const tf = isSel ? T().selText : T().dimText;
+    const tw = isSel ? '700' : '600';
+    const fs = isSel ? Math.max(18,R(0.082)) : Math.max(13,R(0.082));
+    donutSeg(cx,cy,sDeg,eDeg,F.mo1,F.mo2,'transparent',null);
+    arcLabel(cx,cy,mid,F.mo1,F.mo2,MSHORT[i],tf,fs,tw,'spoke');
+  }
+}
+
+// ── DAY RING ──────────────────────────────────────────────────────────────────
+function drawDayRing(cx,cy){
+  const {yr,mo,day}=getVals();
+  const si=ringIdx(DY), seg=360/31;
+  const maxD=(yr!=null&&mo!=null)?daysInMonth(yr,mo):31;
+  for(let d=1;d<=31;d++){
+    const i=d-1, mid=i*seg+DY.off;
+    const sDeg=mid-seg/2, eDeg=mid+seg/2;
+    const isOv=d>maxD, isSel=i===si;
+    const isTod=isSel&&yr===TODAY.getFullYear()&&mo===TODAY.getMonth()&&d===TODAY.getDate();
+    const isHol=!isOv && isNYSEHoliday(yr, mo, d);
+
+    const tf = isSel ? T().selText : isOv ? T().ghostText : T().dimText;
+    const tw = isSel ? '700' : '600';
+    const fs = isSel ? Math.max(15,R(0.068)) : Math.max(11,R(0.068));
+    donutSeg(cx,cy,sDeg,eDeg,F.dy1,F.dy2,'transparent',null);
+    arcLabel(cx,cy,mid,F.dy1,F.dy2,String(d),tf,fs,tw,'spoke');
+
+    // NYSE holiday marker — small dot just below day number inside day ring
+    if(isHol){
+      const a = (mid-90)*Math.PI/180;
+      const dotR = R(F.dy1) + R(F.dy2-F.dy1)*0.25; // 25% from inner edge = close to number
+      const dx = cx + dotR*Math.cos(a);
+      const dy = cy + dotR*Math.sin(a);
+      ctx.beginPath();
+      ctx.arc(dx, dy, R(0.010), 0, Math.PI*2);
+      ctx.fillStyle = isSel ? T().holDotSel : T().holDot;
+      ctx.fill();
+    }
+  }
+}
+
+// ── WEEKDAY RING — draggable, independent ─────────────────────────────────────
+function drawWeekdayRing(cx,cy){
+  const si  = ringIdx(WD);
+  const seg = 360/7;
+  for(let i=0;i<7;i++){
+    const mid  = i*seg + WD.off;
+    const sDeg = mid - seg/2, eDeg = mid + seg/2;
+    const isSel = i===si;
+    const tf = isSel ? T().selText : T().dimText;
+    const tw = isSel ? '700' : '600';
+    const fs = isSel ? Math.max(13,R(0.058)) : Math.max(10,R(0.058));
+    donutSeg(cx,cy,sDeg,eDeg,F.wd1,F.wd2,'transparent',null);
+    arcLabel(cx,cy,mid,F.wd1,F.wd2,DSHORT[i],tf,fs,tw,'spoke');
+  }
+}
+
+function drawDividers(cx,cy){
+  // One line between each ring pair — no double lines
+  [F.yr1, F.mo1, F.dy1, F.wd1].forEach(f=>{
+    ctx.beginPath(); ctx.arc(cx,cy,R(f),0,Math.PI*2);
+    ctx.strokeStyle=T().divider; ctx.lineWidth=R(0.004); ctx.stroke();
+  });
+}
+
+function drawPointer(cx,cy){
+  // Red triangle just above year ring outer edge, at top (0°)
+  const base=cy-R(F.yr2)+R(0.003);
+  const tip =base-R(0.05);
+  const hw  =R(0.018);
+  ctx.beginPath();
+  ctx.moveTo(cx,tip); ctx.lineTo(cx-hw,base); ctx.lineTo(cx+hw,base);
+  ctx.closePath(); ctx.fillStyle=T().pointer; ctx.fill();
+}
+
+// ─── Center panel ─────────────────────────────────────────────────────────────
+const NYSE_NAMES = {
+  "01-01":"New Year's Day",
+  mlk:    'MLK Day',
+  pres:   "Presidents' Day",
+  gf:     'Good Friday',
+  mem:    'Memorial Day',
+  june:   'Juneteenth',
+  '07-04':'Independence Day',
+  labor:  'Labor Day',
+  thanks: 'Thanksgiving',
+  '12-25':'Christmas',
+};
+
+function nyseHolidayName(yr, mo, da){
+  if(!isNYSEHoliday(yr, mo, da)) return null;
+  const d   = new Date(yr, mo, da);
+  const mmdd = String(mo+1).padStart(2,'0')+'-'+String(da).padStart(2,'0');
+  // Fixed dates (before observed shift)
+  if(mmdd==='01-01'||mmdd==='01-02'||mmdd==='12-31') return "New Year's Day";
+  if(mmdd==='07-03'||mmdd==='07-04'||mmdd==='07-05') return 'Independence Day';
+  if(mmdd==='12-24'||mmdd==='12-25'||mmdd==='12-26') return 'Christmas';
+  if(yr>=2022&&(mmdd==='06-18'||mmdd==='06-19'||mmdd==='06-20')) return 'Juneteenth';
+  // Rule-based
+  const wd = d.getDay(); // 1=Mon
+  if(mo===0&&wd===1){ // January Monday
+    const wk=Math.ceil(da/7);
+    if(wk===3) return 'MLK Day';
+  }
+  if(mo===1&&wd===1){
+    const wk=Math.ceil(da/7);
+    if(wk===3) return "Presidents' Day";
+  }
+  if(mo===4&&wd===1) return 'Memorial Day';   // last Mon May
+  if(mo===8&&wd===1&&da<=7) return 'Labor Day';
+  if(mo===10&&wd===4) return 'Thanksgiving';
+  if(d.getDay()===5){ // Friday = could be Good Friday
+    const sat=new Date(yr,mo,da+2);
+    // Easter is sat+1
+    const eas=new Date(yr,sat.getMonth(),sat.getDate()+1);
+    // verify it's actually Easter using our algorithm
+    function easterY(y){
+      const a=y%19,b=Math.floor(y/100),c=y%100,dv=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+      const g=Math.floor((b-f+1)/3),h=(19*a+b-dv-g+15)%30,iv=Math.floor(c/4),k=c%4;
+      const l=(32+2*e+2*iv-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+      const mo2=Math.floor((h+l-7*m+114)/31)-1,da2=((h+l-7*m+114)%31)+1;
+      return new Date(y,mo2,da2);
+    }
+    const trueEaster=easterY(yr);
+    if(eas.toDateString()===trueEaster.toDateString()) return 'Good Friday';
+  }
+  return 'NYSE Holiday';
+}
+
+function updateCenter(){
+  const{yr,mo,day,wd}=getVals();
+  const c=document.getElementById('center');
+  // Always show — center reflects the four independently selected ring values
+  const holName = nyseHolidayName(yr,mo,day);
+  const d = resolveDate(yr,mo,day);
+  const isToday = d && d.toDateString()===TODAY.toDateString();
+  // Label: weekday from WD ring (independent of date math)
+  document.getElementById('cLabel').textContent = DFULL[wd].toUpperCase();
+  document.getElementById('cNum').textContent   = String(day).padStart(2,'0');
+  const sub = holName
+    ? holName.toUpperCase()
+    : MFULL[mo].slice(0,3).toUpperCase()+' '+yr;
+  document.getElementById('cSub').textContent = sub;
+  c.classList.add('show');
+  c.classList.toggle('today-mode', !!isToday);
+  c.classList.toggle('holiday-mode', !!holName && !isToday);
+}
+
+function updateTrail(){
+  // board removed — no-op
+}
+
+// ─── Physics ──────────────────────────────────────────────────────────────────
+// Each ring has its own spring + coast profile.
+// Year  : heavy, deliberate. High friction, high damping — moves like a date window.
+// Month : medium. Smooth and controlled.
+// Day   : lightest, snappiest — most values, small segments, needs to spin freely.
+//
+// Spring: F = -k*x - damp*v  (underdamped when damp < 2*sqrt(k))
+// Coast : velocity *= friction each frame until |v| < handoff, then spring kicks in.
+
+// ── Mechanical Physics ───────────────────────────────────────────────────────
+// Each ring has a radius-based inertia. Outer rings feel heavier and coast
+// longer. Inner rings are nimble. Coast friction is exponential so velocity
+// bleeds off naturally — like a spinning coin slowing to a stop.
+// Spring is critically damped — no hunting, no bounce, just confident settle.
+//
+// Inertia scale: proportional to ring midpoint radius (outer = more mass)
+// Friction:      0.985 (year) → 0.968 (weekday) — outer coasts further
+// Spring k:      lower for outer (softer catch), higher for inner (snappy)
+// Damp:          critically damped = 2*sqrt(k*mass) — zero overshoot
+
+const RING_MASS = {
+  year:    2.8,   // outer — heaviest, coasts longest
+  month:   2.0,
+  day:     1.4,
+  wday:    1.0,   // inner — lightest, most nimble
+};
+
+const PHYSICS = {
+  year:  { k:  80, damp: 30, friction: 0.9860, handoff: 0.08 },
+  month: { k: 110, damp: 30, friction: 0.9780, handoff: 0.15 },
+  day:   { k: 140, damp: 28, friction: 0.9720, handoff: 0.22 },
+  wday:  { k: 170, damp: 26, friction: 0.9650, handoff: 0.30 },
+};
+
+// Velocity scaling: apply sqrt compression so hard flicks don't go crazy
+// but light touches still register proportionally
+function scaleVel(raw, mass){
+  const sign = raw < 0 ? -1 : 1;
+  const mag  = Math.abs(raw);
+  // sqrt compression: preserves feel of light vs hard but caps extremes
+  return sign * Math.pow(mag, 0.78) * (1.0 / Math.sqrt(mass));
+}
+
+const SPRING_REST = 0.018;
+
+let drag=null;
+
+function evtPt(e){
+  const rect=WRAP.getBoundingClientRect(), dpr=DPR();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  return [(cx-rect.left)*dpr*SZ/rect.width/dpr,
+          (cy-rect.top )*dpr*SZ/rect.height/dpr];
+}
+
+function angle(px,py){ return Math.atan2(py-SZ/2,px-SZ/2)*180/Math.PI; }
+
+function hitRing(px,py){
+  const fr=Math.sqrt((px-SZ/2)**2+(py-SZ/2)**2)/(SZ/2);
+  if(fr>=F.yr1&&fr<=F.yr2) return 'year';
+  if(fr>=F.mo1&&fr<=F.mo2) return 'month';
+  if(fr>=F.dy1&&fr<=F.dy2) return 'day';
+  if(fr>=F.wd1&&fr<=F.wd2) return 'wday';
+  return null;
+}
+
+// ── Spring integrator ─────────────────────────────────────────────────────────
+// Runs a real spring physics simulation frame-by-frame.
+// getter/setter: read and write the position value
+// targetFn: returns the snap target (called each frame in case it changes)
+// velRef: {v} object — velocity carried between frames
+// rafRef: {id} object — rAF id for cancellation
+function springTo(getter, setter, targetFn, velRef, rafRef, ph, onDone){
+  if(rafRef.id) cancelAnimationFrame(rafRef.id);
+  let prev = performance.now();
+
+  (function step(now){
+    const dt  = Math.min((now - prev) / 1000, 0.064);
+    prev = now;
+    const pos    = getter();
+    const target = targetFn();
+    const disp   = pos - target;
+    const acc    = -ph.k * disp - ph.damp * velRef.v;
+    velRef.v    += acc * dt;
+    setter(pos + velRef.v * dt);
+    draw();
+
+    const settled = Math.abs(disp) < SPRING_REST && Math.abs(velRef.v) < SPRING_REST;
+    if(settled){
+      setter(target);
+      velRef.v = 0;
+      draw();
+      if(onDone) onDone();
+    } else {
+      rafRef.id = requestAnimationFrame(step);
+    }
+  })(performance.now());
+}
+
+// ── Year snap ─────────────────────────────────────────────────────────────────
+const yearVelRef = {v:0};
+const yearRafRef = {id:null};
+
+function snapYear(initVel=0, cb){
+  const target = Math.round(yearOff/YR_DEG)*YR_DEG;
+  yearVelRef.v = initVel;
+  springTo(()=>yearOff, v=>{yearOff=v;}, ()=>target,
+    yearVelRef, yearRafRef, PHYSICS.year, cb);
+}
+
+// ── Ring snap ─────────────────────────────────────────────────────────────────
+// Each ring gets its own vel/raf refs
+MO.velRef={v:0}; MO.rafRef={id:null};
+DY.velRef={v:0}; DY.rafRef={id:null};
+WD.velRef={v:0}; WD.rafRef={id:null};
+
+function ringTarget(st){
+  const seg=360/st.n;
+  return Math.round(st.off/seg)*seg;
+}
+
+function snapRing(st, initVel=0, cb){
+  const target = ringTarget(st);
+  const ph = st===MO ? PHYSICS.month : st===WD ? PHYSICS.wday : PHYSICS.day;
+  st.velRef.v = initVel;
+  springTo(()=>st.off, v=>{st.off=v;}, ()=>target,
+    st.velRef, st.rafRef, ph, cb);
+}
+
+// ── Coast then spring-snap ────────────────────────────────────────────────────
+// Physics model:
+//   1. COAST phase  — low friction (0.978/frame), ring flies freely.
+//                     Friction is velocity-proportional so fast throws travel far,
+//                     slow releases barely move. No snap target during coast.
+//   2. SPRING phase — once |v| < handoff threshold, spring locks onto nearest segment.
+//                     Slightly underdamped → natural overshoot & settle.
+//
+// The result: hard flick = many values scroll past → elastic land.
+//             gentle nudge = moves 1-2 values → precise elastic settle.
+
+function coastYear(v, cb){
+  if(yearRafRef.id) cancelAnimationFrame(yearRafRef.id);
+  const ph = PHYSICS.year;
+  let vel = scaleVel(v, RING_MASS.year);
+  let prev = performance.now();
+  (function step(now){
+    const dt = Math.min((now - prev) / 16.67, 2.5); // normalize to 60fps frames
+    prev = now;
+    vel *= Math.pow(ph.friction, dt);
+    yearOff -= vel * dt;
+    draw();
+    Math.abs(vel) > ph.handoff
+      ? yearRafRef.id = requestAnimationFrame(step)
+      : snapYear(-vel, cb);
+  })(performance.now());
+}
+
+function coastRing(st, v, cb){
+  if(st.rafRef.id) cancelAnimationFrame(st.rafRef.id);
+  const ph = st===MO ? PHYSICS.month : st===WD ? PHYSICS.wday : PHYSICS.day;
+  const mass = st===MO ? RING_MASS.month : st===WD ? RING_MASS.wday : RING_MASS.day;
+  let vel = scaleVel(v, mass);
+  let prev = performance.now();
+  (function step(now){
+    const dt = Math.min((now - prev) / 16.67, 2.5);
+    prev = now;
+    vel *= Math.pow(ph.friction, dt);
+    st.off += vel * dt;
+    draw();
+    Math.abs(vel) > ph.handoff
+      ? st.rafRef.id = requestAnimationFrame(step)
+      : snapRing(st, vel, cb);
+  })(performance.now());
+}
+
+// ── Animate to target (Today button, keyboard) — spring from current position ──
+function animYear(ty, delay=0){
+  setTimeout(()=>{
+    if(yearRafRef.id) cancelAnimationFrame(yearRafRef.id);
+    const target = yrToOff(ty);
+    yearVelRef.v = (target - yearOff) * 3.5;
+    springTo(()=>yearOff, v=>{yearOff=v;}, ()=>target,
+      yearVelRef, yearRafRef, PHYSICS.year);
+  }, delay);
+}
+
+function animRing(st, idx, delay=0){
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      if(st.rafRef.id) cancelAnimationFrame(st.rafRef.id);
+      const seg = 360/st.n;
+      const currN = ((st.off%360)+360)%360;
+      const tgtN  = ((360-idx*seg)%360+360)%360;
+      let d = tgtN-currN;
+      if(d>180) d-=360; if(d<-180) d+=360;
+      const absTarget = st.off + d;
+      const ph = st===MO ? PHYSICS.month : st===WD ? PHYSICS.month : PHYSICS.day;
+      st.velRef.v = d * 3.5;
+      springTo(()=>st.off, v=>{st.off=v;}, ()=>absTarget,
+        st.velRef, st.rafRef, ph, resolve);
+    }, delay);
+  });
+}
+
+function goToday(){
+  animYear(TODAY.getFullYear(), 0);
+  animRing(MO, TODAY.getMonth(), 70);
+  animRing(DY, TODAY.getDate()-1, 150);
+  animRing(WD, TODAY.getDay(), 220);
+}
+
+// ── Day↔Weekday sync ─────────────────────────────────────────────────────────
+// Called after DY settles: resolve the actual weekday and spin WD to match.
+function syncWDfromDY(){
+  const{yr,mo,day}=getVals();
+  const d=resolveDate(yr,mo,day);
+  if(d) animRing(WD, d.getDay(), 0);
+}
+
+// Called after WD settles: find nearest day in the current month that matches
+// the newly selected weekday, and spin DY to it.
+function syncDYfromWD(){
+  const{yr,mo,day}=getVals();
+  const targetWD=ringIdx(WD);
+  // Find closest day in this month with matching weekday
+  const maxD=daysInMonth(yr,mo);
+  let best=null, bestDist=999;
+  for(let d=1;d<=maxD;d++){
+    const wd=new Date(yr,mo,d).getDay();
+    if(wd===targetWD){
+      const dist=Math.abs(d-day);
+      if(dist<bestDist){bestDist=dist;best=d;}
+    }
+  }
+  if(best!==null) animRing(DY, best-1, 0);
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', onStart,{passive:false});
+canvas.addEventListener('touchstart',onStart,{passive:false});
+window.addEventListener('mousemove', onMove, {passive:false});
+window.addEventListener('touchmove', onMove, {passive:false});
+window.addEventListener('mouseup',   onEnd);
+window.addEventListener('touchend',  onEnd);
+
+// ── Click-to-select helpers ────────────────────────────────────────────────────
+// Given a tap/click at screen angle (degrees from top), figure out which
+// segment index was hit and animate that ring to bring it to the pointer.
+
+function screenAngleAt(px,py){
+  // Returns degrees clockwise from top (0..360)
+  const raw = Math.atan2(py-SZ/2, px-SZ/2)*180/Math.PI + 90; // +90 rotates so top=0
+  return (raw % 360 + 360) % 360;
+}
+
+// For the year ring: which year label is at a given screen angle?
+function yearAtAngle(screenDeg){
+  // Year ring segments: year Y is at screen angle = (Y-centerY)*YR_DEG - fracAngle
+  // => Y = centerY + (screenDeg + fracAngle) / YR_DEG
+  const centerY   = getYear();
+  const fracAngle = yearOff - (centerY - BASE_YEAR)*YR_DEG;
+  const raw       = (screenDeg + fracAngle) / YR_DEG;
+  return centerY + Math.round(raw);
+}
+
+// For standard rings: which segment index is at a given screen angle?
+function idxAtAngle(st, screenDeg){
+  // Segment i is centered at i*seg + st.off (screen angle)
+  // => i = (screenDeg - st.off) / seg, rounded
+  const seg = 360/st.n;
+  const raw = (screenDeg - st.off) / seg;
+  return ((Math.round(raw) % st.n) + st.n) % st.n;
+}
+
+// Click-select: animate the clicked year to the pointer
+function clickSelectYear(screenDeg){
+  const y = yearAtAngle(screenDeg);
+  animYear(y, 0);
+}
+
+// Click-select: animate the clicked segment to the pointer
+function clickSelectRing(st, screenDeg){
+  const idx = idxAtAngle(st, screenDeg);
+  animRing(st, idx, 0);
+}
+
+function onStart(e){
+  if(drag) return;
+  const[px,py]=evtPt(e);
+  const which=hitRing(px,py); if(!which) return;
+  // Cancel any in-progress spring/coast animation
+  if(which==='year' ){if(yearRafRef.id){cancelAnimationFrame(yearRafRef.id);yearRafRef.id=null;}}
+  if(which==='month'){if(MO.rafRef.id) {cancelAnimationFrame(MO.rafRef.id); MO.rafRef.id=null;}}
+  if(which==='day'  ){if(DY.rafRef.id) {cancelAnimationFrame(DY.rafRef.id); DY.rafRef.id=null;}}
+  if(which==='wday' ){if(WD.rafRef.id) {cancelAnimationFrame(WD.rafRef.id); WD.rafRef.id=null;}}
+  const startOff=which==='year'?yearOff:which==='month'?MO.off:which==='day'?DY.off:WD.off;
+  drag={which, sa:angle(px,py), so:startOff, la:angle(px,py), lt:performance.now(), vel:0,
+        startPx:px, startPy:py, moved:false};
+  e.preventDefault();
+}
+
+function onMove(e){
+  if(!drag) return;
+  const[px,py]=evtPt(e);
+  const a=angle(px,py), now=performance.now(), dt=now-drag.lt;
+
+  // Drag detection threshold
+  const dist = Math.sqrt((px-drag.startPx)**2+(py-drag.startPy)**2);
+  if(dist > 4) drag.moved = true;
+  if(!drag.moved) return;
+
+  // Rolling velocity: blend new sample with previous (exponential moving average)
+  // This smooths out jitter and gives a more stable release velocity
+  if(dt > 0){
+    const rawVel = (a - drag.la) / dt * 16; // deg/frame at 60fps
+    drag.vel = drag.vel * 0.6 + rawVel * 0.4;
+  }
+  drag.la = a; drag.lt = now;
+
+  const delta = a - drag.sa;
+  if(drag.which==='year')       yearOff = drag.so - delta;
+  else if(drag.which==='month') MO.off  = drag.so + delta;
+  else if(drag.which==='day')   DY.off  = drag.so + delta;
+  else                          WD.off  = drag.so + delta;
+  draw();
+  e.preventDefault();
+}
+
+function onEnd(e){
+  if(!drag) return;
+  const{which,vel,moved,startPx,startPy}=drag; drag=null;
+
+  if(!moved){
+    // TAP / CLICK — bring the tapped segment to the pointer
+    const sa = screenAngleAt(startPx, startPy);
+    if(which==='year')       { clickSelectYear(sa); setTimeout(syncWDfromDY, 350); }
+    else if(which==='month') { clickSelectRing(MO, sa); setTimeout(syncWDfromDY, 350); }
+    else if(which==='day')   { clickSelectRing(DY, sa); setTimeout(syncWDfromDY, 350); }
+    else                     { clickSelectRing(WD, sa); setTimeout(syncDYfromWD, 350); }
+    return;
+  }
+
+  // DRAG release — coast → spring
+  // Always coast — let the physics decide when to spring.
+  // Low vel → coast barely moves then springs immediately. High vel → full arc.
+  if(which==='year')       coastYear(vel, syncWDfromDY);
+  else if(which==='month') coastRing(MO, vel, syncWDfromDY);
+  else if(which==='day')   coastRing(DY, vel, syncWDfromDY);
+  else                     coastRing(WD, vel, syncDYfromWD);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='t'||e.key==='T'){goToday();return;}
+  const fwd=e.key==='ArrowRight';
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
+  if(e.shiftKey){
+    yearOff+=fwd?YR_DEG:-YR_DEG; draw(); snapYear(0);
+  } else if(e.altKey){
+    DY.off+=fwd?-(360/31):(360/31); draw(); snapRing(DY,0);
+  } else {
+    MO.off+=fwd?-(360/12):(360/12); draw(); snapRing(MO,0);
+  }
+});
+
+// ─── Resize & init ────────────────────────────────────────────────────────────
+function resize(){
+  const rect=WRAP.getBoundingClientRect(), dpr=DPR();
+  SZ=rect.width*dpr;
+  canvas.width=SZ; canvas.height=SZ;
+  draw();
+}
+
+yearOff = yrToOff(TODAY.getFullYear());
+MO.off  = ((360-TODAY.getMonth()*(360/12))%360+360)%360;
+DY.off  = ((360-(TODAY.getDate()-1)*(360/31))%360+360)%360;
+WD.off  = ((360-TODAY.getDay()*(360/7))%360+360)%360;
+
+window.addEventListener('resize',resize);
+// Preload all weights so canvas can access them immediately
+Promise.all([
+  document.fonts.load('300 12px "Barlow Condensed"'),
+  document.fonts.load('400 12px "Barlow Condensed"'),
+  document.fonts.load('600 12px "Barlow Condensed"'),
+  document.fonts.load('700 12px "Barlow Condensed"'),
+]).then(resize);
+document.getElementById('center').addEventListener('click', goToday);
+
+</script>
+
+</body>
+</html>
