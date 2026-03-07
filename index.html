@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,140 +12,110 @@
 
 /* ── Theme tokens ── */
 :root{
-–bg:       #f4f4f4;
-–dial-bg:  #ffffff;
-–dial-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 2px 12px rgba(0,0,0,.07);
-–center-bg:#ffffff;
-–center-border: rgba(0,0,0,.08);
-–ui-bg:    #ffffff;
-–ui-border:rgba(0,0,0,.12);
-–ui-text:  rgba(0,0,0,.38);
-–trail-border: rgba(0,0,0,.13);
-–trail-text:   rgba(0,0,0,.2);
-–trail-on:     #111;
-–trail-on-border: rgba(0,0,0,.32);
-–wordmark: rgba(0,0,0,.28);
-–hint:     rgba(0,0,0,.22);
-–arrow:    rgba(0,0,0,.18);
-–label:    rgba(0,0,0,.35);
-–num:      #111;
-–red:      #e8001d;
-–toggle-icon: ‘☀️’;
+  --bg:       #f4f4f4;
+  --dial-bg:  #ffffff;
+  --dial-shadow: 0 0 0 1px rgba(0,0,0,.10), 0 4px 24px rgba(0,0,0,.10);
+  --center-bg:#ffffff;
+  --center-border: rgba(0,0,0,.06);
+  --ui-bg:    #ffffff;
+  --ui-border:rgba(0,0,0,.12);
+  --ui-text:  rgba(0,0,0,.38);
+  --trail-border: rgba(0,0,0,.13);
+  --trail-text:   rgba(0,0,0,.2);
+  --trail-on:     #111;
+  --trail-on-border: rgba(0,0,0,.32);
+  --wordmark: rgba(0,0,0,.28);
+  --hint:     rgba(0,0,0,.22);
+  --arrow:    rgba(0,0,0,.18);
+  --label:    rgba(0,0,0,.35);
+  --num:      #111;
+  --red:      #e8001d;
+  --toggle-icon: '☀️';
 }
 
+
 html,body{
-width:100%;height:100%;background:#f4f4f4;background:var(–bg);color-scheme:light;
-font-family:‘Barlow Condensed’,-apple-system,BlinkMacSystemFont,‘Helvetica Neue’,sans-serif;
-display:flex;align-items:flex-start;justify-content:center;
-min-height:100vh;overflow:hidden;touch-action:none;
-transition:background .3s;
+  width:100%;height:100%;background:#f4f4f4;background:var(--bg);color-scheme:light;
+  font-family:'Barlow Condensed',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+  display:flex;align-items:flex-start;justify-content:center;
+  min-height:100vh;overflow:hidden;touch-action:none;
+  transition:background .3s;
 }
 .app{
-display:flex;flex-direction:column;align-items:center;
-gap:20px;padding:12px 10px;width:100%;max-width:440px;
-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  gap:20px;padding:12px 10px;width:100%;max-width:440px;
+  height:100vh;
 }
 .dial-wrapper{
-flex:1;
-display:flex;align-items:center;justify-content:center;
+  flex:1;
+  display:flex;align-items:center;justify-content:center;
 }
 .wordmark{
-font-weight:500;font-size:10px;letter-spacing:.46em;
-text-transform:uppercase;color:var(–wordmark);align-self:flex-start;
-transition:color .3s;
+  font-weight:500;font-size:10px;letter-spacing:.46em;
+  text-transform:uppercase;color:var(--wordmark);align-self:flex-start;
+  transition:color .3s;
 }
-/* ── Solari / split-flap display board ── */
-.board{
-display:flex;gap:2px;align-items:stretch;
-background:#111;border-radius:4px;
-padding:4px;
-box-shadow:0 2px 12px rgba(0,0,0,.4);
-width:100%;
-}
-.flap{
-display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-font-family:‘Share Tech Mono’,monospace;
-background:#1a1a1a;
-color:#f0e6c8;
-border-radius:2px;
-flex:1;padding:8px 4px 7px;
-position:relative;overflow:hidden;
-}
-/* Horizontal crease — the split-flap fold line */
-.flap::after{
-content:’’;position:absolute;left:0;right:0;
-top:50%;height:1px;background:rgba(0,0,0,.55);
-}
-.flap-label{
-font-size:8px;letter-spacing:.22em;color:rgba(240,230,200,.35);
-text-transform:uppercase;margin-bottom:4px;line-height:1;
-}
-.flap-val{
-font-size:26px;line-height:1;letter-spacing:.04em;
-color:#f0e6c8;
-}
-.flap-sep{
-width:2px;background:#111;align-self:stretch;flex-shrink:0;
-}
+
 .cal-wrap{
-position:relative;
-width:min(96vw,420px);height:min(96vw,420px);
-flex-shrink:0;border-radius:50%;overflow:hidden;
-background:var(–dial-bg);
-box-shadow:var(–dial-shadow);
-transition:background .3s,box-shadow .3s;
+  position:relative;
+  width:min(96vw,420px);height:min(96vw,420px);
+  flex-shrink:0;border-radius:50%;overflow:hidden;
+  background:var(--dial-bg);
+  box-shadow:var(--dial-shadow);
+  transition:background .3s,box-shadow .3s;
 }
 canvas#dial{
-position:absolute;top:0;left:0;
-width:100%;height:100%;
-touch-action:none;
+  position:absolute;top:0;left:0;
+  width:100%;height:100%;
+  touch-action:none;
 }
 .center{
-position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-width:22%;height:22%;border-radius:50%;
-background:var(–center-bg);
-border:1px solid var(–center-border);
-box-shadow:0 0 0 4px var(–center-bg);
-display:flex;flex-direction:column;align-items:center;justify-content:center;
-z-index:20;pointer-events:auto;cursor:pointer;
-transition:background .3s,border-color .3s,box-shadow .3s;
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:22%;height:22%;border-radius:50%;
+  background:var(--center-bg);
+  border:1px solid var(--center-border);
+  box-shadow:0 0 0 4px var(--center-bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:20;pointer-events:auto;cursor:pointer;
+  transition:background .3s,border-color .3s,box-shadow .3s;
 }
 .center:active{opacity:0.7;transition:opacity .1s;}
 .c-label{
-font-size:clamp(7px,1.8vw,9px);letter-spacing:.2em;color:var(–label);
-text-transform:uppercase;opacity:0;transform:translateY(2px);
-transition:opacity .25s,transform .25s,color .3s;
+  font-size:clamp(7px,1.8vw,9px);letter-spacing:.2em;color:var(--label);
+  text-transform:uppercase;opacity:0;transform:translateY(2px);
+  transition:opacity .25s,transform .25s,color .3s;
 }
 .c-num{
-font-family:‘Barlow’,sans-serif;font-weight:500;
-font-size:clamp(22px,7vw,36px);line-height:1;
-letter-spacing:-.02em;color:var(–num);opacity:0;transform:scale(.88);
-transition:opacity .25s .04s,transform .25s .04s,color .25s;
+  font-family:'Barlow',sans-serif;font-weight:500;
+  font-size:clamp(22px,7vw,36px);line-height:1;
+  letter-spacing:-.02em;color:var(--num);opacity:0;transform:scale(.88);
+  transition:opacity .25s .04s,transform .25s .04s,color .25s;
 }
 .c-sub{
-font-size:clamp(6px,1.6vw,8px);letter-spacing:.16em;color:var(–label);
-text-transform:uppercase;opacity:0;transform:translateY(-2px);
-transition:opacity .25s .08s,transform .25s .08s,color .3s;
+  font-size:clamp(6px,1.6vw,8px);letter-spacing:.16em;color:var(--label);
+  text-transform:uppercase;opacity:0;transform:translateY(-2px);
+  transition:opacity .25s .08s,transform .25s .08s,color .3s;
 }
 .c-dot{
-width:4px;height:4px;border-radius:50%;background:var(–red);
-margin-top:2px;opacity:0;transition:opacity .25s,background .3s;
+  width:4px;height:4px;border-radius:50%;background:var(--red);
+  margin-top:2px;opacity:0;transition:opacity .25s,background .3s;
 }
 .center.show .c-label,.center.show .c-num,.center.show .c-sub{opacity:1;transform:none}
-.center.today-mode .c-num{color:var(–red)}
+.center.today-mode .c-num{color:var(--red)}
 .center.today-mode .c-dot{opacity:1}
-.center.holiday-mode .c-sub{color:var(–red);letter-spacing:.08em}
+.center.holiday-mode .c-sub{color:var(--red);letter-spacing:.08em}
 .controls{display:flex;align-items:center;justify-content:space-between;width:100%}
 .btn-today{
-font-family:‘Barlow Condensed’,sans-serif;font-weight:500;font-size:9px;
-letter-spacing:.24em;text-transform:uppercase;color:var(–ui-text);
-background:var(–ui-bg);border:1px solid var(–ui-border);padding:7px 14px;
-cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:7px;
-transition:color .2s,border-color .2s,background .3s;
+  font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:9px;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--ui-text);
+  background:var(--ui-bg);border:1px solid var(--ui-border);padding:7px 14px;
+  cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:7px;
+  transition:color .2s,border-color .2s,background .3s;
 }
-.btn-today:hover{color:var(–red);border-color:var(–red)}
-.btn-dot{width:6px;height:6px;border-radius:50%;background:var(–red);transition:background .3s}
-.hint{font-size:8px;letter-spacing:.1em;color:var(–hint);transition:color .3s}
+.btn-today:hover{color:var(--red);border-color:var(--red)}
+.btn-dot{width:6px;height:6px;border-radius:50%;background:var(--red);transition:background .3s}
+.hint{font-size:8px;letter-spacing:.1em;color:var(--hint);transition:color .3s}
+
 
 </style>
 </head>
@@ -159,11 +128,7 @@ transition:color .2s,border-color .2s,background .3s;
       <div class="c-label" id="cLabel"></div>
       <div class="c-num"   id="cNum"></div>
       <div class="c-sub"   id="cSub"></div>
-
-```
-</div>
-```
-
+    </div>
   </div>
   </div>
   <div class="controls">
@@ -985,16 +950,20 @@ DY.off  = ((360-(TODAY.getDate()-1)*(360/31))%360+360)%360;
 WD.off  = ((360-TODAY.getDay()*(360/7))%360+360)%360;
 
 window.addEventListener('resize',resize);
-// Preload all weights so canvas can access them immediately
-Promise.all([
+// Preload all weights — wait for fonts before first draw
+// Falls back gracefully to system font if Google Fonts blocked
+const _fontLoad = Promise.all([
   document.fonts.load('300 12px "Barlow Condensed"'),
   document.fonts.load('400 12px "Barlow Condensed"'),
   document.fonts.load('600 12px "Barlow Condensed"'),
   document.fonts.load('700 12px "Barlow Condensed"'),
-]).then(resize);
+]).catch(()=>{}); // never reject — just draw with system font
+
+_fontLoad.then(()=>{ resize(); });
+// Also draw immediately with system font so page isn't blank
+resize();
 document.getElementById('center').addEventListener('click', goToday);
 
 </script>
-
 </body>
 </html>
