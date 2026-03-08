@@ -9,7 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Orbital">
-<meta name="theme-color" content="#f4f4f4">
+<meta name="theme-color" content="#f4f4f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0e0e" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="manifest" href="manifest.json">
@@ -17,7 +18,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Orbital">
-<meta name="theme-color" content="#f4f4f4">
+<meta name="theme-color" content="#f4f4f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0e0e" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -47,9 +49,33 @@
   --toggle-icon: '☀️';
 }
 
+@media (prefers-color-scheme: dark) {
+  :root{
+    --bg:       #0e0e0e;
+    --dial-bg:  #1a1a1a;
+    --dial-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 4px 24px rgba(0,0,0,.6);
+    --center-bg:#1a1a1a;
+    --center-border: rgba(255,255,255,.08);
+    --ui-bg:    #1a1a1a;
+    --ui-border:rgba(255,255,255,.12);
+    --ui-text:  rgba(255,255,255,.38);
+    --trail-border: rgba(255,255,255,.13);
+    --trail-text:   rgba(255,255,255,.2);
+    --trail-on:     #f0f0f0;
+    --trail-on-border: rgba(255,255,255,.32);
+    --wordmark: rgba(255,255,255,.28);
+    --hint:     rgba(255,255,255,.22);
+    --arrow:    rgba(255,255,255,.18);
+    --label:    rgba(255,255,255,.35);
+    --num:      #f0f0f0;
+    --red:      #ff3344;
+    --toggle-icon: '🌙';
+  }
+}
+
 
 html,body{
-  width:100%;height:100%;background:#f4f4f4;background:var(--bg);color-scheme:light;
+  width:100%;height:100%;background:#f4f4f4;background:var(--bg);color-scheme:light dark;
   font-family:'Barlow Condensed',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
   display:flex;align-items:flex-start;justify-content:center;
   min-height:100vh;overflow:hidden;touch-action:none;
@@ -92,6 +118,9 @@ canvas#dial{
   border-right: 5px solid transparent;
   border-top:   10px solid #e8001d;
   z-index:10;
+}
+@media (prefers-color-scheme: dark) {
+  .pointer{ border-top-color: #ff3344; }
 }
 .center{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -188,9 +217,26 @@ const THEMES = {
     pointer:     '#e8001d',
     holDot:      'rgba(220,50,47,0.55)',
     holDotSel:   '#c0392b',
+  },
+  dark: {
+    dialBg:      '#1a1a1a',
+    centerBg:    '#1a1a1a',
+    bezelMajor:  '#f0f0f0',
+    bezelMinor:  '#555555',
+    divider:     'rgba(255,255,255,0.12)',
+    selText:     '#f0f0f0',
+    dimText:     'rgba(255,255,255,0.45)',
+    ghostText:   'rgba(255,255,255,0.10)',
+    pointer:     '#ff3344',
+    holDot:      'rgba(255,80,80,0.55)',
+    holDotSel:   '#ff3344',
   }
 };
-const T = () => THEMES.light;
+const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+const T = () => isDark() ? THEMES.dark : THEMES.light;
+
+// Re-draw when system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => draw());
 
 const MSHORT=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
