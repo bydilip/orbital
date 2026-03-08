@@ -781,10 +781,10 @@ function coastYear(v, cb){
   let vel = scaleVel(v, RING_MASS.year);
   let prev = performance.now();
   (function step(now){
-    const dt = Math.min((now - prev) / 16.67, 2.5);
+    const dt = Math.min((now - prev) / 16.67, 2.5); // normalize to 60fps frames
     prev = now;
     vel *= Math.pow(ph.friction, dt);
-    yearOff += vel * dt;  // same direction as drag
+    yearOff -= vel * dt;
     draw();
     Math.abs(vel) > ph.handoff
       ? yearRafRef.id = requestAnimationFrame(step)
@@ -931,10 +931,8 @@ function onStart(e){
   if(which==='day'  ){if(DY.rafRef.id) {cancelAnimationFrame(DY.rafRef.id); DY.rafRef.id=null;}}
   if(which==='wday' ){if(WD.rafRef.id) {cancelAnimationFrame(WD.rafRef.id); WD.rafRef.id=null;}}
   const startOff=which==='year'?yearOff:which==='month'?MO.off:which==='day'?DY.off:WD.off;
-  // velSamples: store last N angle+time samples for accurate release velocity
   drag={which, sa:angle(px,py), so:startOff, la:angle(px,py), lt:performance.now(), vel:0,
-        startPx:px, startPy:py, moved:false,
-        velSamples:[]};
+        startPx:px, startPy:py, moved:false};
   e.preventDefault();
 }
 
@@ -948,16 +946,16 @@ function onMove(e){
   if(dist > 4) drag.moved = true;
   if(!drag.moved) return;
 
-  // Store last 80ms of samples for release velocity
-  drag.velSamples.push({a, t:now});
-  const cutoff = now - 80;
-  drag.velSamples = drag.velSamples.filter(s => s.t >= cutoff);
-
+  // Rolling velocity: blend new sample with previous (exponential moving average)
+  // This smooths out jitter and gives a more stable release velocity
+  if(dt > 0){
+    const rawVel = (a - drag.la) / dt * 16; // deg/frame at 60fps
+    drag.vel = drag.vel * 0.6 + rawVel * 0.4;
+  }
   drag.la = a; drag.lt = now;
 
   const delta = a - drag.sa;
-  // All rings use same direction — drag right = scroll right
-  if(drag.which==='year')       yearOff = drag.so + delta;
+  if(drag.which==='year')       yearOff = drag.so - delta;
   else if(drag.which==='month') MO.off  = drag.so + delta;
   else if(drag.which==='day')   DY.off  = drag.so + delta;
   else                          WD.off  = drag.so + delta;
@@ -967,7 +965,7 @@ function onMove(e){
 
 function onEnd(e){
   if(!drag) return;
-  const{which,moved,startPx,startPy,velSamples}=drag; drag=null;
+  const{which,vel,moved,startPx,startPy}=drag; drag=null;
 
   if(!moved){
     // TAP / CLICK — bring the tapped segment to the pointer
@@ -979,16 +977,9 @@ function onEnd(e){
     return;
   }
 
-  // Compute release velocity from last 80ms of samples (not EMA — avoids spin-back)
-  let vel = 0;
-  if(velSamples.length >= 2){
-    const first = velSamples[0];
-    const last  = velSamples[velSamples.length-1];
-    const dt    = last.t - first.t;
-    if(dt > 0) vel = (last.a - first.a) / dt * 16; // deg/frame at 60fps
-  }
-
   // DRAG release — coast → spring
+  // Always coast — let the physics decide when to spring.
+  // Low vel → coast barely moves then springs immediately. High vel → full arc.
   if(which==='year')       coastYear(vel, syncWDfromDY);
   else if(which==='month') coastRing(MO, vel, syncWDfromDY);
   else if(which==='day')   coastRing(DY, vel, syncWDfromDY);
