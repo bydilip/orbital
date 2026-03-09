@@ -49,15 +49,14 @@
   --toggle-icon: '☀️';
 }
 
-@media (prefers-color-scheme: dark) {
-  :root{
-    --bg:       #0e0e0e;
-    --dial-bg:  #1a1a1a;
-    --dial-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 4px 24px rgba(0,0,0,.6);
-    --center-bg:#1a1a1a;
-    --center-border: rgba(255,255,255,.08);
-    --ui-bg:    #1a1a1a;
-    --ui-border:rgba(255,255,255,.12);
+[data-theme="dark"]{
+    --bg:       #1c1c1e;
+    --dial-bg:  #000000;
+    --dial-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 8px 40px rgba(0,0,0,.9);
+    --center-bg:#000000;
+    --center-border: rgba(255,255,255,.10);
+    --ui-bg:    #1c1c1e;
+    --ui-border:rgba(255,255,255,.14);
     --ui-text:  rgba(255,255,255,.38);
     --trail-border: rgba(255,255,255,.13);
     --trail-text:   rgba(255,255,255,.2);
@@ -71,7 +70,6 @@
     --red:      #ff3344;
     --toggle-icon: '🌙';
   }
-}
 
 
 html{
@@ -125,9 +123,7 @@ canvas#dial{
   border-top:   10px solid #e8001d;
   z-index:10;
 }
-@media (prefers-color-scheme: dark) {
-  .pointer{ border-top-color: #ff3344; }
-}
+[data-theme="dark"] .pointer{ border-top-color: #ff3344; }
 .center{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   width:22%;height:22%;border-radius:50%;
@@ -225,11 +221,11 @@ const THEMES = {
     holDotSel:   '#c0392b',
   },
   dark: {
-    dialBg:      '#1a1a1a',
-    centerBg:    '#1a1a1a',
+    dialBg:      '#000000',
+    centerBg:    '#000000',
     bezelMajor:  '#f0f0f0',
-    bezelMinor:  '#555555',
-    divider:     'rgba(255,255,255,0.12)',
+    bezelMinor:  '#444444',
+    divider:     'rgba(255,255,255,0.10)',
     selText:     '#f0f0f0',
     dimText:     'rgba(255,255,255,0.45)',
     ghostText:   'rgba(255,255,255,0.10)',
@@ -238,11 +234,20 @@ const THEMES = {
     holDotSel:   '#ff3344',
   }
 };
-const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
 const T = () => isDark() ? THEMES.dark : THEMES.light;
 
-// Re-draw when system theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => draw());
+// ─── Theme management — always follows system ─────────────────────────────────
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+}
+const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+applyTheme(darkMQ.matches);
+// Safari fires 'change' reliably; Chrome sometimes needs a visibility nudge
+darkMQ.addEventListener('change', e => { applyTheme(e.matches); draw(); });
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden){ applyTheme(darkMQ.matches); draw(); }
+});
 
 const MSHORT=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
