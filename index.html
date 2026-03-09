@@ -661,7 +661,7 @@ const RING_MASS = {
   year:    2.8,   // outer — heaviest, coasts longest
   month:   3.5,   // slowed — 12 segments, needs to feel deliberate
   day:     1.4,
-  wday:    1.6,   // controlled — not too heavy, not too nimble
+  wday:    3.0,   // heavy — deliberate, controlled
 };
 
 const PHYSICS = {
@@ -832,7 +832,7 @@ function animRing(st, idx, delay=0){
       let d = tgtN-currN;
       if(d>180) d-=360; if(d<-180) d+=360;
       const absTarget = st.off + d;
-      const ph = st===MO ? PHYSICS.month : st===WD ? PHYSICS.month : PHYSICS.day;
+      const ph = st===MO ? PHYSICS.month : st===WD ? PHYSICS.wday : PHYSICS.day;
       st.velRef.v = d * 3.5;
       springTo(()=>st.off, v=>{st.off=v;}, ()=>absTarget,
         st.velRef, st.rafRef, ph, resolve);
